@@ -5,7 +5,8 @@ from flask_security.utils import hash_password
 from flask_login import current_user
 from extensions import db
 from datetime import timedelta
-from models import User, Role, Upload, UserPreference
+from models import User, Role, Upload, UserPreference, SalesRecord
+import hashlib
 import os, uuid
 import pandas as pd
 from analysis import validate_data, analyze_basic, sales_by_category, sales_over_time, profit_by_category, top_customers
@@ -91,16 +92,25 @@ def upload():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(filepath)
 
+            # read once here
+            df = pd.read_excel(filepath) if file.filename.endswith('.xlsx') else pd.read_csv(filepath)
+
             if not description:
                 try:
-                    df = pd.read_excel(filepath) if file.filename.endswith('.xlsx') else pd.read_csv(filepath)
-                    description=auto_describe_df(df, fallback=file.filename)
+                    description = auto_describe_df(df, fallback=file.filename)
                 except Exception:
-                    description=file.filename
+                    description = file.filename
 
-            upload_entry = Upload(filename=file.filename, user_id=current_user.id, description=description)
+            upload_entry = Upload(filename=file.filename,
+                                  user_id=current_user.id,
+                                  description=description)
             db.session.add(upload_entry)
-            db.session.commit()
+            db.session.commit()  # need id for FK
+
+            # ⬇️ persist rows into SalesRecord (with dedupe)
+            inserted = store_dataframe_rows(df, upload_entry, current_user.id)
+            app.logger.info(f"Inserted {inserted} new rows into SalesRecord")
+
             return redirect(url_for('dashboard', filename=file.filename))
     return render_template('upload.html')
 
@@ -162,8 +172,35 @@ def update_file_description(file_id):
 @app.route('/dashboard/<filename>')
 @login_required
 def dashboard(filename):
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    df = pd.read_excel(filepath) if filename.endswith('.xlsx') else pd.read_csv(filepath)
+    # find the upload row
+    upload = Upload.query.filter_by(
+        filename=filename,
+        user_id=current_user.id
+    ).first_or_404()
+
+    # load all its SalesRecord rows
+    records = SalesRecord.query.filter_by(upload_id=upload.id).all()
+    if not records:
+        # fallback: if for some reason nothing is stored, you *can* fall back to file
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        df = pd.read_excel(filepath) if filename.endswith('.xlsx') else pd.read_csv(filepath)
+    else:
+        # build DataFrame from DB rows
+        df = pd.DataFrame([{
+            "Date": r.date,
+            "Product": r.product,
+            "Category": r.category,
+            "Region": r.region,
+            "Customer": r.customer,
+            "Quantity": r.quantity,
+            "Unit_Price": r.unit_price,
+            "Sales": r.sales,
+            "Profit": r.profit,
+        } for r in records])
+
+    valid, message = validate_data(df)
+    if not valid:
+        return render_template('dashboard.html', filename=filename, error=message)
 
     valid, message = validate_data(df)
     if not valid:
@@ -312,6 +349,69 @@ def forgot_router():
         flash("You're already logged in. Use Change Password instead", "info")
         return redirect(url_for('security.change_password'))
     return redirect(url_for('security.forgot_password'))
+
+def store_dataframe_rows(df, upload, user_id):
+    """
+    Persist df rows into SalesRecord with a per-row hash for deduplication.
+    """
+    # Make sure expected columns exist (fill with NaN if missing)
+    expected = ["Date", "Product", "Category", "Region", "Customer",
+                "Quantity", "Unit_Price", "Sales", "Profit"]
+    for col in expected:
+        if col not in df.columns:
+            df[col] = pd.NA
+
+    # Compute Sales if not provided
+    if df["Sales"].isna().all() and {"Quantity", "Unit_Price"}.issubset(df.columns):
+        df["Sales"] = df["Quantity"].astype(float) * df["Unit_Price"].astype(float)
+
+    # Normalize types
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
+
+    # build a stable string for each row and hash it
+    cols_for_hash = ["Date", "Product", "Category", "Region", "Customer",
+                     "Quantity", "Unit_Price", "Sales", "Profit"]
+
+    def make_hash(row):
+        parts = ["" if pd.isna(row[c]) else str(row[c]) for c in cols_for_hash]
+        s = "|".join(parts)
+        return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+    df["row_hash"] = df.apply(make_hash, axis=1)
+
+    # remove rows whose hash already exists (duplicate protection)
+    hashes = df["row_hash"].tolist()
+    existing = {
+        h for (h,) in db.session.query(SalesRecord.row_hash)
+                               .filter(SalesRecord.row_hash.in_(hashes))
+                               .all()
+    }
+    new_df = df[~df["row_hash"].isin(existing)]
+
+    if new_df.empty:
+        return 0  # nothing new
+
+    # bulk insert for speed
+    rows = []
+    for _, r in new_df.iterrows():
+        rows.append({
+            "upload_id": upload.id,
+            "user_id": user_id,
+            "row_hash": r["row_hash"],
+            "date": r["Date"],
+            "product": r["Product"],
+            "category": r["Category"],
+            "region": r["Region"],
+            "customer": r["Customer"],
+            "quantity": float(r["Quantity"]) if not pd.isna(r["Quantity"]) else None,
+            "unit_price": float(r["Unit_Price"]) if not pd.isna(r["Unit_Price"]) else None,
+            "sales": float(r["Sales"]) if not pd.isna(r["Sales"]) else None,
+            "profit": float(r["Profit"]) if not pd.isna(r["Profit"]) else None,
+        })
+
+    db.session.bulk_insert_mappings(SalesRecord, rows)
+    db.session.commit()
+    return len(rows)
 
 if __name__ == '__main__':
     os.makedirs('data', exist_ok=True)

@@ -834,3 +834,62 @@ dashboard-grid {
   margin-top: -0.5rem;
   margin-bottom: 1rem;
 }
+
+.period-selector {
+  margin: 0 0 1rem 0;
+  padding: .75rem 1rem;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+
+.period-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-end;
+}
+
+.period-block h4 {
+  margin: 0 0 .25rem;
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.period-block label {
+  display: inline-flex;
+  flex-direction: column;
+  font-size: .85rem;
+  margin-right: .75rem;
+}
+
+.period-block input[type="date"] {
+  margin-top: .15rem;
+  padding: .3rem .45rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: .9rem;
+}
+
+.period-actions {
+  margin-left: auto;
+  display: flex;
+  gap: .5rem;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.comparison-col h3 {
+  margin: 0 0 .75rem;
+  font-size: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+}
