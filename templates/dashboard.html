@@ -1,0 +1,570 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - SalesVision{% endblock %}
+
+{% block content %}
+<!-- FULL-BLEED DASHBOARD (overrides card layout) -->
+
+<div class="dashboard-fullbleed">
+  <h2>Dashboard for {{ filename }}</h2>
+
+  {% if error %}
+    <div class="flash">{{ error }}</div>
+  {% else %}
+
+  <!-- TABS NAVIGATION -->
+  <!-- HEADER ROW: Tabs + Filters button -->
+  <div class="dashboard-header-row">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="profit">Profit Analysis</button>
+      <button class="tab-btn" data-tab="customers">Customer Insights</button>
+      <button class="tab-btn" data-tab="forecast">Forecast & Correlation</button>
+      <button class="tab-btn" data-tab="region">Regional Sales</button>
+      <button class="tab-btn" data-tab="predictive">Predictive Analytics</button>
+      <button class="tab-btn" data-tab="summary">Summary</button>
+    </div>
+
+    <button class="btn btn-secondary filters-btn" id="filtersBtn" type="button">
+      Filters
+    </button>
+  </div>
+
+    <!-- FILTERS MODAL -->
+  <div id="filtersModal" class="modal-backdrop" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Choose sections to show</h3>
+        <button type="button" class="modal-close" id="filtersCloseBtn">&times;</button>
+      </div>
+      <form id="filtersForm">
+        <p class="modal-subtitle">Turn dashboard sections on or off for this file.</p>
+
+        <div class="filter-options">
+          <label>
+            <input type="checkbox" name="tab" value="overview" checked>
+            Overview
+          </label>
+          <label>
+            <input type="checkbox" name="tab" value="profit" checked>
+            Profit Analysis
+          </label>
+          <label>
+            <input type="checkbox" name="tab" value="customers" checked>
+            Customer Insights
+          </label>
+          <label>
+            <input type="checkbox" name="tab" value="forecast" checked>
+            Forecast &amp; Correlation
+          </label>
+          <label>
+            <input type="checkbox" name="tab" value="region" checked>
+            Regional Sales
+          </label>
+          <label>
+            <input type="checkbox" name="tab" value="predictive" checked>
+            Predictive Analytics
+          </label>
+          <label>
+            <input type="checkbox" name="tab" value="summary" checked>
+            Summary
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn" id="filtersResetBtn">Show all</button>
+          <div class="modal-footer-right">
+            <button type="button" class="btn btn-secondary" id="filtersCancelBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Apply</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TAB CONTENTS -->
+  <div id="overview" class="tab-content active">
+    <div class="kpi-row">
+      <div class="kpi-item">
+        <div class="kpi-label">Total Sales</div>
+        <div class="kpi-value">${{ "{:,.2f}".format(total_sales) }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Top Product</div>
+        <div class="kpi-value">{{ top_product }}</div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div id="categoryChart" class="chart-card"></div>
+      <div id="trendChart" class="chart-card"></div>
+    </div>
+  </div>
+
+  <div id="profit" class="tab-content">
+    <div class="chart-grid">
+      {% if profit_data %}
+      <div id="profitChart" class="chart-card"></div>
+      {% endif %}
+      {% if profit_efficiency_data %}
+      <div id="profitEfficiencyChart" class="chart-card"></div>
+      {% endif %}
+    </div>
+  </div>
+
+<div id="customers" class="tab-content">
+
+  <div style="margin-bottom: 10px;">
+    <label for="numCustomers">Show top customers:</label>
+    <input
+      id="numCustomers"
+      type="number"
+      min="1"
+      step="1"
+      value="5"
+      style="width: 80px; margin-left: 6px;"
+    >
+  </div>
+
+  <div class="chart-grid">
+    {% if top_customers_data %}
+    <div id="customersChart" class="chart-card"></div>
+    {% endif %}
+    <div>
+    <div id="rfmChart" class="chart-card"></div>
+    </div>
+  </div>
+
+</div>   <!-- END OF CUSTOMERS TAB -->
+
+
+  <div id="forecast" class="tab-content">
+    <div class="chart-grid">
+      <div>
+        <p class="chart-legend">This chart shows actual sales over time and the projected future trend using Exponential Smoothing.</p>
+        <div id="forecastChart" class="chart-card"></div>
+      </div>
+      
+      <div>
+        <p class="chart-legend">Correlation heatmap — the closer to +1 or -1, the stronger the relationship between metrics.</p>
+        <div id="corrChart" class="chart-card"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="region" class="tab-content">
+    <div class="chart-grid">
+      <div id="regionChart" class="chart-card"></div>
+    </div>
+  </div>
+
+  <div id="predictive" class="tab-content">
+  <div class="chart-grid">
+  <div>
+  <p class="chart-legend">Feature importance indicates which variables most influence customer churn prediction.</p>
+  <div id="churnChart" class="chart-card"></div>
+  </div>
+<div>
+<p class="chart-legend">Forecast generated using Facebook Prophet model with trend and seasonality captured.</p>
+<div id="prophetForecastChart" class="chart-card"></div>
+</div>
+
+  </div>
+  <div class="chart-grid">
+    <div>
+      <p class="chart-legend">Forecasted product demand for upcoming months. The blue line represents expected quantity trends.</p>
+      <div id="demandChart" class="chart-card"></div>
+    </div>
+  </div>
+</div>
+
+<div id="summary" class="tab-content">
+  <div class="card">
+    <h3>General Summary</h3>
+    <p>{{ summary_text }}</p>
+  </div>
+</div>
+
+  <div class="upload-btn-container">
+    <a href="{{ url_for('upload') }}" class="btn upload-btn">Upload Another File</a>
+  </div>
+
+  {% endif %}
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>  
+<script>
+// Data from backend
+const categoryData = {{ category_data | tojson }};
+const trendData = {{ trend_data | tojson }};
+const profitData        = {{ profit_data | tojson }};
+const topCustomersData  = {{ top_customers_data | tojson }};
+const profitEfficiencyData = {{ profit_efficiency_data | tojson }};
+const corrData             = {{ corr_data | tojson }};
+const forecastData         = {{ forecast_data | tojson }};
+const rfmData              = {{ rfm_data | tojson }};
+const regionData           = {{ region_data | tojson }};
+const prophetForecastData = {{ prophet_forecast_data | tojson }};
+const churnData = {{ churn_data | tojson }};
+const demandData = {{ demand_data | tojson }};
+  
+  // Common layout helper for full-width responsive charts
+  function fullLayout(title){
+    return {
+      title,
+      margin: { t: 48, l: 56, r: 24, b: 56 },
+      autosize: true
+    };
+  }
+  const cfg = { responsive: true, displaylogo: false };
+
+  // Sales by Category
+ if (categoryData && categoryData.categories) { 
+  Plotly.newPlot('categoryChart', [{
+    x: categoryData.categories,
+    y: categoryData.values,
+    type: 'bar',
+  }], fullLayout('Sales by Category'), cfg);
+}
+
+  // Monthly Sales Trend
+if (trendData && trendData.months) {
+  Plotly.newPlot('trendChart', [{
+    x: trendData.months,
+    y: trendData.values,
+    type: 'scatter',
+    mode: 'lines+markers'
+  }], fullLayout('Monthly Sales Trend'), cfg);
+}
+
+  if (profitData) {
+    Plotly.newPlot('profitChart', [{
+      x: profitData.categories,
+      y: profitData.values,
+      type: 'bar'
+    }], fullLayout('Profit by Category'), cfg);
+  }
+
+function renderTopCustomers(n) {
+  if (!topCustomersData || !topCustomersData.customers) return;
+
+  const maxN = topCustomersData.customers.length;
+
+  // Parse & clamp the value
+  let k = parseInt(n, 10);
+  if (isNaN(k) || k < 1) k = 1;
+  if (k > maxN) k = maxN;
+
+  const limited = {
+    customers: topCustomersData.customers.slice(0, k),
+    values: topCustomersData.values.slice(0, k)
+  };
+
+  Plotly.newPlot('customersChart', [{
+    x: limited.customers,
+    y: limited.values,
+    type: 'bar'
+  }], fullLayout(`Top ${k} Customers`), cfg);
+
+  // Keep the input in sync & set a sensible max
+  const input = document.getElementById('numCustomers');
+  if (input) {
+    input.value = k;
+    input.max = maxN;
+  }
+}
+
+const numInput = document.getElementById('numCustomers');
+if (numInput) {
+  // Update chart as user types
+  numInput.addEventListener('input', () => renderTopCustomers(numInput.value));
+}
+
+// Initial render with default 5 (will clamp if there are fewer than 5 customers)
+renderTopCustomers(5);
+
+  if (profitEfficiencyData) {
+  Plotly.newPlot('profitEfficiencyChart', [{
+    x: profitEfficiencyData.sales,
+    y: profitEfficiencyData.profit,
+    text: profitEfficiencyData.categories,
+    mode: 'markers+text',
+    marker: {
+      size: profitEfficiencyData.margin,
+      color: profitEfficiencyData.margin,
+      colorscale: 'Viridis',
+      showscale: true
+    }
+  }], fullLayout('Profit Efficiency (Sales vs Profit, bubble = Margin%)'), cfg);
+}
+
+
+  // Make charts resize nicely with viewport changes
+  window.addEventListener('resize', () => {
+    ['categoryChart','trendChart','profitChart','customersChart']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) Plotly.Plots.resize(el);
+      });
+  });
+
+if (rfmData && rfmData.length) {
+  Plotly.newPlot('rfmChart', [{
+    x: rfmData.map(d => d.Recency),
+    y: rfmData.map(d => d.Frequency),
+    customdata: rfmData.map(d => Number(d.Monetary)),  // <- use customdata instead of z
+    text: rfmData.map(d => d.Customer),
+    hovertemplate:
+      "<b>%{text}</b><br>" +
+      "Recency: %{x}<br>" +
+      "Frequency: %{y}<br>" +
+      "Monetary: €%{customdata:,.2f}<extra></extra>",  // <- use customdata here
+    mode: 'markers',
+    marker: {
+      color: rfmData.map(d => d.Cluster),
+      colorscale: 'Viridis',
+      size: 6
+    }
+  }], fullLayout('Customer Segmentation (RFM Clusters)'), cfg);
+  document.getElementById('rfmChart').insertAdjacentHTML('afterend', `
+    <p class="chart-legend">
+      Each dot represents a customer based on RFM analysis:<br>
+      <b>Recency</b> = days since last purchase, <b>Frequency</b> = number of purchases, <b>Monetary</b> = total spend.
+    </p>
+  `);
+} else {
+  document.getElementById('rfmChart').remove();
+}
+
+function showNoData(id) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = "<div class='nodata'>No data available for this chart</div>";
+}
+
+</script>
+<script>
+window.addEventListener('error', function(e) {
+  console.error("JS Error:", e.message, "in", e.filename, "line", e.lineno);
+});
+
+console.log("Loaded dashboard with data:", {
+  categoryData,
+  trendData,
+  profitData,
+  topCustomersData,
+  profitEfficiencyData,
+  corrData,
+  forecastData,
+  rfmData,
+  regionData
+});
+</script>
+<script>
+if (corrData) {
+  Plotly.newPlot('corrChart', corrData.data, corrData.layout);
+}
+// Forecast Chart
+if (forecastData && forecastData.history && forecastData.forecast) {
+  Plotly.newPlot('forecastChart', [
+    {
+      x: forecastData.history,
+      y: forecastData.values,
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: 'Historical'
+    },
+    {
+      x: forecastData.forecast,
+      y: forecastData.forecast_values,
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: 'Forecast'
+    }
+  ], fullLayout('Sales Forecast'), cfg);
+} else {
+  showNoData('forecastChart');
+}
+
+// Region Chart
+if (regionData && regionData.data && regionData.layout) {
+  Plotly.newPlot('regionChart', regionData.data, regionData.layout);
+} else {
+  showNoData('regionChart');
+}
+
+// Prophet Advanced Forecast
+if (prophetForecastData && prophetForecastData.history) {
+  Plotly.newPlot('prophetForecastChart', [
+    { x: prophetForecastData.history, y: prophetForecastData.values, type: 'scatter', mode: 'lines+markers', name: 'Historical' },
+    { x: prophetForecastData.forecast, y: prophetForecastData.forecast_values, type: 'scatter', mode: 'lines+markers', name: 'Forecast' }
+  ], fullLayout('Advanced Forecast (Prophet)'), cfg);
+} else {
+  showNoData('prophetForecastChart');
+}
+
+// Churn Prediction
+if (churnData) {
+  Plotly.newPlot('churnChart', [{
+    x: Object.keys(churnData.feature_importance),
+    y: Object.values(churnData.feature_importance),
+    type: 'bar'
+  }], fullLayout(`Churn Feature Importance (Accuracy: ${churnData.accuracy}, Churn Rate: ${churnData.churn_rate})`), cfg);
+} else {
+  showNoData('churnChart');
+}
+
+// Product Demand Forecast (just show first product for demo)
+if (demandData && Object.keys(demandData).length > 0) {
+  const firstKey = Object.keys(demandData)[0];
+  const first = demandData[firstKey];
+  Plotly.newPlot('demandChart', [
+    { x: first.history, y: first.values, type: 'scatter', mode: 'lines+markers', name: 'Historical' },
+    { x: first.forecast, y: first.forecast_values, type: 'scatter', mode: 'lines+markers', name: 'Forecast' }
+  ], fullLayout(`Product Demand Forecast - ${firstKey}`), cfg);
+} else {
+  showNoData('demandChart');
+}
+
+</script>
+
+<script>
+(function() {
+  const allTabIds = ["overview", "profit", "customers", "forecast", "region", "predictive", "summary"];
+  const fileKey = {{ filename|tojson }};  // use filename so prefs are per-file
+  const storageKey = "sv_tab_filters_" + fileKey;
+
+  const tabs = Array.from(document.querySelectorAll(".tab-btn"));
+  const contents = Array.from(document.querySelectorAll(".tab-content"));
+
+  const filtersBtn = document.getElementById("filtersBtn");
+  const filtersModal = document.getElementById("filtersModal");
+  const filtersCloseBtn = document.getElementById("filtersCloseBtn");
+  const filtersCancelBtn = document.getElementById("filtersCancelBtn");
+  const filtersResetBtn = document.getElementById("filtersResetBtn");
+  const filtersForm = document.getElementById("filtersForm");
+
+  // --- helpers ---
+  function getSelectedTabsFromStorage() {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    } catch (e) {}
+    return null;
+  }
+
+  function saveSelectedTabs(selected) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(selected));
+    } catch (e) {}
+  }
+
+  function applyFilters(selectedIds) {
+    // Make sure there's at least one
+    if (!selectedIds.length) {
+      selectedIds = ["overview"];
+    }
+
+    // Show/hide tab buttons
+    tabs.forEach(btn => {
+      const id = btn.dataset.tab;
+      btn.style.display = selectedIds.includes(id) ? "" : "none";
+    });
+
+    // Show/hide tab content
+    contents.forEach(c => {
+      const id = c.id;
+      c.style.display = selectedIds.includes(id) ? "" : "none";
+    });
+
+    // Fix active tab: if current active is hidden, switch to first visible
+    let activeBtn = tabs.find(b => b.classList.contains("active") && selectedIds.includes(b.dataset.tab));
+    if (!activeBtn) {
+      tabs.forEach(b => b.classList.remove("active"));
+      contents.forEach(c => c.classList.remove("active"));
+
+      const firstId = selectedIds[0];
+      const firstBtn = tabs.find(b => b.dataset.tab === firstId);
+      const firstContent = document.getElementById(firstId);
+      if (firstBtn && firstContent) {
+        firstBtn.classList.add("active");
+        firstContent.classList.add("active");
+      }
+    } else {
+      // Ensure corresponding content has .active
+      contents.forEach(c => c.classList.remove("active"));
+      const activeId = activeBtn.dataset.tab;
+      const activeContent = document.getElementById(activeId);
+      if (activeContent) activeContent.classList.add("active");
+    }
+  }
+
+  function syncModalCheckboxes(selectedIds) {
+    const boxes = filtersForm.querySelectorAll('input[name="tab"]');
+    boxes.forEach(box => {
+      box.checked = selectedIds.includes(box.value);
+    });
+  }
+
+  // --- initial setup: load filters from storage if any ---
+  let initialSelected = getSelectedTabsFromStorage() || allTabIds.slice();
+  applyFilters(initialSelected);
+  syncModalCheckboxes(initialSelected);
+
+  // --- Tabs click logic as before ---
+  tabs.forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.style.display === "none") return; // ignore hidden
+      tabs.forEach(b => b.classList.remove("active"));
+      contents.forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      const content = document.getElementById(btn.dataset.tab);
+      if (content) {
+        content.classList.add("active");
+        // Resize plots in that tab (each chart in the tab)
+        const plots = content.querySelectorAll(".chart-card");
+        plots.forEach(p => {
+          if (p && p.id) Plotly.Plots.resize(p);
+        });
+      }
+    });
+  });
+
+  // --- Open/close modal ---
+  function openModal() {
+    filtersModal.hidden = false;
+  }
+  function closeModal() {
+    filtersModal.hidden = true;
+  }
+
+  filtersBtn?.addEventListener("click", openModal);
+  filtersCloseBtn?.addEventListener("click", closeModal);
+  filtersCancelBtn?.addEventListener("click", closeModal);
+
+  // Reset: show all
+  filtersResetBtn?.addEventListener("click", () => {
+    const boxes = filtersForm.querySelectorAll('input[name="tab"]');
+    boxes.forEach(b => b.checked = true);
+  });
+
+  // Apply filters on submit
+  filtersForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const selected = Array.from(filtersForm.querySelectorAll('input[name="tab"]:checked'))
+      .map(b => b.value);
+
+    applyFilters(selected);
+    saveSelectedTabs(selected);
+    closeModal();
+  });
+
+  // Close modal on backdrop click
+  filtersModal?.addEventListener("click", (e) => {
+    if (e.target === filtersModal) closeModal();
+  });
+})();
+</script>
+
+
+
+{% endblock %}

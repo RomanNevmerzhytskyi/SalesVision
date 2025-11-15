@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Home - SalesVision{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-text">
+    <h2>Welcome to SalesVision</h2>
+    <p>Visualize your sales data with ease and insight.</p>
+    <a class="btn" href="{{ url_for('upload') }}">Get Started</a>
+  </div>
+
+  <div class="hero-animation">
+    <lottie-player 
+      src="{{ url_for('static', filename='animations/analytics.json') }}"
+      background="transparent"
+      speed="1"
+      loop
+      autoplay>
+    </lottie-player>
+  </div>
+</section>
+
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+{% endblock %}

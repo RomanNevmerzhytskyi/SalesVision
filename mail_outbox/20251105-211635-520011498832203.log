@@ -1,0 +1,30 @@
+Content-Type: multipart/alternative;
+ boundary="===============0083597517767310679=="
+MIME-Version: 1.0
+Subject: Password reset instructions
+From: SalesVision <noreply@example.test>
+To: nevmroman@gmail.com
+Date: Wed, 05 Nov 2025 19:16:35 -0000
+Message-ID: <176237019572.3619.11330134992773052452@1.0.0.127.in-addr.arpa>
+
+--===============0083597517767310679==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+
+Click the link below to reset your password:
+
+http://127.0.0.1:5000/reset/WyIyZTY2NGUzNDdkMjk0NjZiODcyYWM0NThjYzFmMDE3YiIsIiQ1JHJvdW5kcz01MzUwMDAkVkplYmpEeHgyWC9aYjAuaiRWZk80OVlKVC9VZ21qT2dtNVloeXQuQ1UuZzVQMHYwL0dYY2hkdS9mc2hEIl0.aQuikw.Gk9K72YwyAHwpDz84rr5Evy4Xb8
+--===============0083597517767310679==
+Content-Type: text/html; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+
+<p>
+  <a href="http://127.0.0.1:5000/reset/WyIyZTY2NGUzNDdkMjk0NjZiODcyYWM0NThjYzFmMDE3YiIsIiQ1JHJvdW5kcz01MzUwMDAkVkplYmpEeHgyWC9aYjAuaiRWZk80OVlKVC9VZ21qT2dtNVloeXQuQ1UuZzVQMHYwL0dYY2hkdS9mc2hEIl0.aQuikw.Gk9K72YwyAHwpDz84rr5Evy4Xb8">Click here to reset your password</a>
+</p>
+--===============0083597517767310679==--
+
+-------------------------------------------------------------------------------

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Settings - SalesVision{% endblock %}
+
+{% block content %}
+<section class="card" style="max-width: 720px; margin: 2rem auto;">
+  <h2>Settings</h2>
+
+  <form method="POST" class="settings-form">
+    <div class="form-group">
+      <label for="theme">Theme</label>
+      <select id="theme" name="theme" class="input">
+        <option value="light" {{ 'selected' if pref.theme == 'light' else '' }}>Light</option>
+        <option value="dark"  {{ 'selected' if pref.theme == 'dark'  else '' }}>Dark</option>
+      </select>
+      <small>UI theme (you can wire this into your CSS later).</small>
+    </div>
+
+    <div class="form-group">
+      <label for="default_dashboard_tab">Default Dashboard Tab</label>
+      <select id="default_dashboard_tab" name="default_dashboard_tab" class="input">
+        <option value="overview" {{ 'selected' if pref.default_dashboard_tab == 'overview' }}>Overview</option>
+        <option value="profit"   {{ 'selected' if pref.default_dashboard_tab == 'profit' }}>Profit Analysis</option>
+        <option value="customers"{{ 'selected' if pref.default_dashboard_tab == 'customers' }}>Customer Insights</option>
+        <option value="forecast" {{ 'selected' if pref.default_dashboard_tab == 'forecast' }}>Forecast & Correlation</option>
+        <option value="region"   {{ 'selected' if pref.default_dashboard_tab == 'region' }}>Regional Sales</option>
+      </select>
+      <small>Which tab should open first on the dashboard.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="charts_per_row">Charts per Row</label>
+      <input id="charts_per_row" name="charts_per_row" type="number" min="1" max="4"
+             class="input" value="{{ pref.charts_per_row or 2 }}">
+      <small>Affects the dashboard chart grid density.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="homepage_bg">Home Background Color</label>
+      <input id="homepage_bg" name="homepage_bg" class="input" type="color"
+             value="{{ pref.homepage_bg or '#f1f3f6' }}">
+      <small>This should match your Lottie’s background color (e.g., #f1f3f6).</small>
+    </div>
+
+    <button class="btn" type="submit">Save Settings</button>
+  </form>
+
+  <hr style="margin: 2rem 0;">
+
+  <h3>Account</h3>
+  <p><strong>Email:</strong> {{ current_user.email }}</p>
+
+  {% if security.changeable %}
+    <p><a class="btn" href="{{ url_for('security.change_password') }}">Change Password</a></p>
+  {% else %}
+    <p style="color:#666;">Password change isn’t enabled. Set <code>SECURITY_CHANGEABLE=True</code> to enable it.</p>
+  {% endif %}
+
+  {% if security.recoverable %}
+    <p><a href="{{ url_for('forgot_router') }}">Forgot Password?</a></p>
+  {% endif %}
+</section>
+{% endblock %}

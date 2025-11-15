@@ -1,0 +1,24 @@
+Content-Type: multipart/alternative;
+ boundary="===============3948298604123142343=="
+MIME-Version: 1.0
+Subject: Your password has been reset
+From: SalesVision <noreply@example.test>
+To: nevmroman@gmail.com
+Date: Wed, 05 Nov 2025 19:17:28 -0000
+Message-ID: <176237024889.3619.17082897123800325967@1.0.0.127.in-addr.arpa>
+
+--===============3948298604123142343==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+Your password has been reset
+--===============3948298604123142343==
+Content-Type: text/html; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+<p>Your password has been reset</p>
+--===============3948298604123142343==--
+
+-------------------------------------------------------------------------------

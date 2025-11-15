@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}My Files - SalesVision{% endblock %}
+{% block content %}
+
+    <div class="dashboard-container">
+        <h2>My Uploaded Files</h2>
+
+        {% if uploads %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Uploaded</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in uploads %}
+                    <tr>
+                        <td>{{file.filename}}</td>
+                        <td>{{file.uploaded_at.strftime("%Y-%m-%d %H:%M")}}</td>
+                        <td>{{file.description or "-"}}</td>
+                        <td>
+                            <a href="{{ url_for('dashboard', filename=file.filename) }}" class="btn small">Open</a>
+                            <form action="{{ url_for('delete_file', file_id=file.id) }}" method="POST" style="display: inline;">
+                                <button type="submit" class="btn small danger">Delete</button>
+                            </form>
+                            <form action="{{ url_for('update_file_description', file_id=file.id) }}" method="POST" style="display:flex; gap:.5rem;">
+  <input name="description" class="input" value="{{ file.description or '' }}" placeholder="Add a short description">
+  <button class="btn small" type="submit">Save</button>
+</form>
+
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>You haven't uploaded any files yet.</p>
+            <a href="{{ url_for('upload') }}" class="btn">Upload your first file</a>
+        {% endif %}
+    </div>
+
+{% endblock %}
